@@ -1,4 +1,11 @@
 services:
-#    core_class_mapper.example:
-#        class: Core\ClassMapperBundle\Example
-#        arguments: [@service_id, "plain_value", %parameter%]
+    classmapperservice:
+        class: 'Core\PrototypeBundle\Service\ClassMapper'
+        arguments: ["@service_container",%objectMapper%]
+        
+    eventlistener.classmapper:
+      class: 'Core\PrototypeBundle\EventListener\ClassMapperListener'
+      arguments: [@service_container]
+      tags:
+         - { name: kernel.event_listener, priority: 61, event: kernel.controller, method: onKernelController}
+                  
