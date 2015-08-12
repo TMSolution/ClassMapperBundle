@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\PrototypeBundle\EventListener;
+namespace Core\ClassMapperBundle\EventListener;
 
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;

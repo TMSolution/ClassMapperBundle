@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\PrototypeBundle\Service;
+namespace Core\ClassMapperBundle\Service;
 
 use OutOfBoundsException;
 use UnexpectedValueException;
