@@ -1,5 +1,5 @@
 {
-    "name": "tmsolution/c-lassmapperbundle",
+    "name": "tmsolution/classmapper-bundle",
     "type": "symfony-bundle",
     "description": "Symfony2 bundle for classmapper",
     "keywords": ["classmapper", "bundle"],
