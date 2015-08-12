@@ -1,0 +1,4 @@
+services:
+#    core_class_mapper.example:
+#        class: Core\ClassMapperBundle\Example
+#        arguments: [@service_id, "plain_value", %parameter%]
