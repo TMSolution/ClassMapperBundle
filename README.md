@@ -15,7 +15,7 @@ To use the bundle, update your `composer.json`:
 
 ```
 //composer require
-
+...
 "tmsolution/classmapper-bundle": "~1.0"
 ```
 
