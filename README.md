@@ -30,7 +30,7 @@ public function registerBundles()
 {
     $bundles = array(
         // ...
-        new Core\ClassMapperBundle\CoreClassMapperBundle()
+        new Core\ClassMapperBundle\CoreClassMapperBundle();
     );
 }
 ```
