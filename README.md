@@ -11,7 +11,16 @@ TMSolution ClassMapperBundle is a tool for mapping class names to more friendly 
 
 ### Configuration
 
-To use the bundle, enable it in the `AppKernel.php`:
+To use the bundle, update your `composer.json`:
+
+```
+//composer require
+
+"tmsolution/classmapper-bundle": "~1.0"
+```
+
+
+and enable it in the `AppKernel.php`:
 
 ```
 <?php
