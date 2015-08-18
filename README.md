@@ -27,9 +27,6 @@ public function registerBundles()
 ```
 
 
-
-
-
 Also, change your `config.yml` file similarly to the provided example:
 
 ```
