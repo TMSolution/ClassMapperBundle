@@ -1,7 +1,6 @@
 # ClassMapperBundle
 
->by Damian Piela <damian.piela@tmsolution.pl>
->https://github.com/damianpi
+>by Damian Piela <damian.piela@tmsolution.pl> GitHub: <a href="https://github.com/damianpi">damianpi</a>
 
 ---
 
