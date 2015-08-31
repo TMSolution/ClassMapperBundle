@@ -1,0 +1,6 @@
+core_class_mapper:
+    languages:
+        en:
+{% for key,entity in entities %}
+            {{key}}: '{{entity.className}}'
+{% endfor %}
