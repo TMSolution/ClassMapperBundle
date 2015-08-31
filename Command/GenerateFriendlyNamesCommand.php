@@ -1,4 +1,5 @@
 <?php
+<?php
 
 /**
  * Copyright (c) 2014, TMSolution
@@ -58,17 +59,17 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
 
             if ($entry != ".") {
 
-                dump($entry);
-
                 if (is_file($entityFolderPath . DIRECTORY_SEPARATOR . $entry)) {
                     $entryArr = explode(".", $entry);
 
                     if ($entryArr[count($entryArr) - 1] == "php") {
                         $entityName = $entryArr[0];
 
-                        $entities[] = [
+                        $className= $bundleName . '\\' . 'Entity' . '\\' . $entityName;
+                        $entities[$className] = [
                             "entityName" => strtolower($entityName),
-                            "className" => $bundleName . '\\' . 'Entity' . '\\' . $entityName
+                            "className" => $className,
+                            "bundleName" => mb_substr(strtolower($bundleName),0,-6)
                         ];
                     }
                 }
@@ -86,44 +87,34 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
         $rootDirArr[] = "src";
         return implode(DIRECTORY_SEPARATOR, $rootDirArr);
     }
-
-    /*@todo*/
-    protected function changeDuplicatedNames($entities) {
-
-        $counter = 0;
-        foreach ($entities as $key=> $entity) {
-            if ($counter > 0) {
-                $entities[$key]["entityName"] = $entity["entityName"] . '_' . $counter;
-            }
-        }
-        return $entities;
-    }
-
-    protected function findDupliactes($bundlesEntities) {
-
-        foreach ($bundlesEntities as $bundleEntity) {
-            $entityName = $bundleEntity["entityName"];
-            $entities = array_filter($bundlesEntities, function($item,$key) use ($entityName,$bundlesEntities) {
-
-                if ($item["entityName"] == $entityName) {
-                    return $bundlesEntities[$item["entityName"]];
-                }
-            }, ARRAY_FILTER_USE_BOTH
-            );
-     
-            if (count($entities) > 1) {
-                $this->changeDuplicatedNames($entities);
-            }
+    
+    protected function prepare($entitites)
+    {
+        $preparedEntities=[];
+        
+        foreach($entitites as $entity)
+        {
             
+            if(array_key_exists($entity["entityName"],$preparedEntities))
+            {
+                $preparedEntities[$entity["bundleName"]."_".$entity["entityName"]]=$entity;
+            }
+            else
+            {
+                $preparedEntities[$entity["entityName"]]=$entity;
+            }
         }
+        return $preparedEntities;
     }
 
-    protected function readEntities($input) {
+    protected function readEntities($input,$rootDir) {
 
         $namesOfBundles = $this->getNamesOfBundles($input);
-        $rootDir = $this->getContainer()->get('kernel')->getRootDir();
+       
         $srcDir = $this->getSrcDir($rootDir);
         $entitites = [];
+        
+        
 
         foreach ($namesOfBundles as $nameOfBundle) {
 
@@ -131,15 +122,31 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
             $entitites = array_merge($entitites, $bundleEntities);
         }
         
-        $this->findDupliactes($entitites);
+        return $this->prepare($entitites);
+        //$this->findDupliactes($entitites);
        
+    }
+    
+    protected function isFileNameBusy($fileName) {
+        if (file_exists($fileName) == true) {
+            throw new LogicException("File ".$fileName." exists!");
+        }
+        return false;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
-
-        $this->readEntities($input);
-
-        // file_put_contents($fileName, $renderedConfig);
+        
+        $rootDir = $this->getContainer()->get('kernel')->getRootDir();
+        $entities=$this->readEntities($input,$rootDir);
+        $fileName=$rootDir.DIRECTORY_SEPARATOR."config".DIRECTORY_SEPARATOR."classmapper.yml";
+        $this->isFileNameBusy($fileName);
+        $templating = $this->getContainer()->get('templating');
+        
+        $renderedConfig = $templating->render("CoreClassMapperBundle:Command:classmapper.yml.twig", [
+            "entities" => $entities
+            ]);
+        
+        file_put_contents($fileName, $renderedConfig);
         $output->writeln("Classmaper config generated");
     }
 
