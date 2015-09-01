@@ -1,5 +1,4 @@
 <?php
-<?php
 
 /**
  * Copyright (c) 2014, TMSolution
