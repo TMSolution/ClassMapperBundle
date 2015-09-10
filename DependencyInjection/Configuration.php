@@ -23,8 +23,6 @@ class Configuration implements ConfigurationInterface
         $rootNode
         ->children()
             ->arrayNode('languages')
-                ->isRequired()
-                ->requiresAtLeastOneElement()
                 ->useAttributeAsKey('name')
                 ->prototype('array')
                     ->useAttributeAsKey('name')
