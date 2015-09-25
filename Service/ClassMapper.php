@@ -58,5 +58,24 @@ class ClassMapper
         }
         return $mapForRequestedClass[$index];
     }
+    
+     public function getAllEntityNames($locale) {
+
+        $lang = $this->classMapper["languages"];
+        try {
+            if (isset($lang[$locale]) === false) {
+                throw new OutOfBoundsException("Unsupported language");
+            }
+            return $lang[$locale];    
+        } catch (OutOfBoundsException $ex) {
+            $defaultLocale = $this->container->getParameter('locale');
+            if (isset($lang[$defaultLocale]) === false) {
+                throw new OutOfBoundsException("Unsupported language");
+            }
+            return $lang[$defaultLocale];    
+            
+        }
+
+    }
 
 }
