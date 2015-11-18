@@ -18,26 +18,31 @@ use Doctrine\Bundle\DoctrineBundle\Mapping\DisconnectedMetadataFactory;
 use ReflectionClass;
 use LogicException;
 use UnexpectedValueException;
+use Core\PrototypeBundle\Component\Yaml\Parser;
+use Core\PrototypeBundle\Component\Yaml\Dumper;
 
 /**
  * GridConfigCommand generates widget class and his template.
  * @author Mariusz Piela <mariuszpiela@gmail.com>
  */
-class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
-    
-    
-    
-    protected $correctedEntityNames=[];
+class GenerateFriendlyNamesCommand extends ContainerAwareCommand
+{
 
-    protected function configure() {
+    protected $correctedEntityNames = [];
+    protected $yamlArr = [];
+    protected $languages = [];
+    protected $output = null;
+
+    protected function configure()
+    {
         $this->setName('classmapper:generate:friendlynames')
                 ->setDescription('Generate  friendly names mapped by entites. You can use it in routes')
-                ->addArgument(
-                        'bundles', InputArgument::REQUIRED, 'Insert entity class name, use "," to separate bundles names '
-        );
+                ->addArgument('bundles', InputArgument::REQUIRED, 'Insert entity class name, use "," to separate bundles names ')
+                ->addArgument('languages', InputArgument::REQUIRED, 'Insert languages, separated by commas');
     }
 
-    protected function getNamesOfBundles($input) {
+    protected function getNamesOfBundles($input)
+    {
 
         $bundlesString = $input->getArgument('bundles');
         $namesOfBundles = explode(",", $bundlesString);
@@ -48,7 +53,14 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
         return $namesOfBundles;
     }
 
-    protected function readBundleEntities($rootDir, $bundleName) {
+    protected function getLanguages($input)
+    {
+
+        $this->languages = explode(',', $input->getArgument('languages'));
+    }
+
+    protected function readBundleEntities($rootDir, $bundleName)
+    {
         $entityFolderPath = $rootDir . DIRECTORY_SEPARATOR . $bundleName . DIRECTORY_SEPARATOR . 'Entity' . DIRECTORY_SEPARATOR;
         $entities = [];
 
@@ -64,11 +76,11 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
                     if ($entryArr[count($entryArr) - 1] == "php") {
                         $entityName = $entryArr[0];
 
-                        $className= $bundleName . '\\' . 'Entity' . '\\' . $entityName;
+                        $className = $bundleName . '\\' . 'Entity' . '\\' . $entityName;
                         $entities[$className] = [
                             "entityName" => strtolower($entityName),
                             "className" => $className,
-                            "bundleName" => mb_substr(strtolower($bundleName),0,-6)
+                            "bundleName" => mb_substr(strtolower($bundleName), 0, -6)
                         ];
                     }
                 }
@@ -80,72 +92,105 @@ class GenerateFriendlyNamesCommand extends ContainerAwareCommand {
         //wez katalog encji, przeczytaj w nim wszystkie nazwy klas
     }
 
-    protected function getSrcDir($rootDir) {
+    protected function getSrcDir($rootDir)
+    {
         $rootDirArr = explode(DIRECTORY_SEPARATOR, $rootDir);
         unset($rootDirArr[count($rootDirArr) - 1]);
         $rootDirArr[] = "src";
         return implode(DIRECTORY_SEPARATOR, $rootDirArr);
     }
-    
+
     protected function prepare($entitites)
     {
-        $preparedEntities=[];
-        
-        foreach($entitites as $entity)
-        {
-            
-            if(array_key_exists($entity["entityName"],$preparedEntities))
-            {
-                $preparedEntities[$entity["bundleName"]."_".$entity["entityName"]]=$entity;
-            }
-            else
-            {
-                $preparedEntities[$entity["entityName"]]=$entity;
+
+        foreach ($this->languages as $language) {
+
+            foreach ($entitites as $entity) {
+
+                if (!array_key_exists($entity['entityName'], $this->yamlArr['core_class_mapper']['languages'][$language])) {
+                    $this->yamlArr['core_class_mapper']['languages'][$language][$entity['entityName']] = $entity['className'];
+                }
             }
         }
-        return $preparedEntities;
+
+        return $this->yamlArr;
     }
 
-    protected function readEntities($input,$rootDir) {
+    protected function readEntities($input, $rootDir)
+    {
 
         $namesOfBundles = $this->getNamesOfBundles($input);
-       
+
         $srcDir = $this->getSrcDir($rootDir);
         $entitites = [];
-        
-        
+
+
 
         foreach ($namesOfBundles as $nameOfBundle) {
 
             $bundleEntities = $this->readBundleEntities($srcDir, $nameOfBundle);
             $entitites = array_merge($entitites, $bundleEntities);
         }
-        
+
         return $this->prepare($entitites);
         //$this->findDupliactes($entitites);
-       
     }
-    
-    protected function isFileNameBusy($fileName) {
+
+    protected function isFileNameBusy($fileName)
+    {
         if (file_exists($fileName) == true) {
-            throw new LogicException("File ".$fileName." exists!");
+            throw new LogicException("File " . $fileName . " exists!");
         }
         return false;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output) {
-        
+    protected function readYml($configFullPath)
+    {
+        try {
+            if (file_exists($configFullPath)) {
+                $yaml = new Parser();
+                $this->yamlArr = $yaml->parse(file_get_contents($configFullPath));
+                if ($this->yamlArr === NULL) {
+
+                    $this->yamlArr = ['core_class_mapper' => ['languages' => []]];
+                    foreach ($this->languages as $language) {
+                        $this->yamlArr['core_class_mapper']['languages'][] = [$language];
+                    }
+                }
+            } else {
+                $this->yamlArr = ['core_class_mapper' => ['languages' => []]];
+                foreach ($this->languages as $language) {
+                    $this->yamlArr['core_class_mapper']['languages'][] = [$language];
+                }
+            }
+
+            return $this->yamlArr;
+        } catch (\Exception $e) {
+            throw new \Exception('Error reading yml file.');
+        }
+    }
+
+    protected function writeYml($fileName)
+    {
+
+        $yaml = new Dumper();
+        $yamlData = $yaml->dump($this->yamlArr, 4, 0, false, true);
+
+        file_put_contents($fileName, $yamlData);
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $this->output = $output;
         $rootDir = $this->getContainer()->get('kernel')->getRootDir();
-        $entities=$this->readEntities($input,$rootDir);
-        $fileName=$rootDir.DIRECTORY_SEPARATOR."config".DIRECTORY_SEPARATOR."classmapper.yml";
-        $this->isFileNameBusy($fileName);
-        $templating = $this->getContainer()->get('templating');
-        
-        $renderedConfig = $templating->render("CoreClassMapperBundle:Command:classmapper.yml.twig", [
-            "entities" => $entities
-            ]);
-        
-        file_put_contents($fileName, $renderedConfig);
+        $filePath = $rootDir . DIRECTORY_SEPARATOR . "config" . DIRECTORY_SEPARATOR . "classmapper.yml";
+
+        $this->getLanguages($input);
+        $this->readYml($filePath);
+        $this->readEntities($input, $rootDir);
+        $this->writeYml($filePath);
+
+
         $output->writeln("Classmaper config generated");
     }
 
